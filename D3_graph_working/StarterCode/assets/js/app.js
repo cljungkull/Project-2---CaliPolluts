@@ -22,6 +22,7 @@ var svg = d3.select("#scatter")
   .attr("width", svgWidth)
   .attr("height", svgHeight);
 
+
 // shift everything over by the margins
 var chartGroup = svg.append("g")
     .attr("transform", `translate(${margin.left}, ${margin.top})`);
@@ -30,39 +31,39 @@ var chartGroup = svg.append("g")
 var acsData = null;  // Store the chart data
 var chosenXAxis = "pollution";  // Default initial x-axis label
 var chosenYAxis = "traffic";  // Default initial y-axis label
-var xAxisLabels = ["pollution", "poverty", "cars"];  // Default 
+var xAxisLabels = ["pollution", "poverty", "cars"];  // Default
 var yAxisLabels = ["traffic", "asthma", "density"];
-var labelsTitle = { "pollution": "Pollution", 
-                    "poverty": "Poverty", 
+var labelsTitle = { "pollution": "Pollution",
+                    "poverty": "Poverty",
                     "cars": "Cars per Household",
-                    "traffic": "Traffic Burden", 
-                    "asthma": "Asthma Cases", 
+                    "traffic": "Traffic Burden",
+                    "asthma": "Asthma Cases",
                     "density": "Household Density" };
 var axisPadding = 20;
 
 // function used for xy-scale var upon click on axis label text
 function scale(acsData, chosenAxis, xy) {
     var axisRange = (xy === "x") ? [0, chartWidth]:[chartHeight, 0]
-    
+
     // create scales for chosen axis
     var linearScale = d3.scaleLinear()
       .domain([d3.min(acsData, d => d[chosenAxis]) * 0.8,
         d3.max(acsData, d => d[chosenAxis]) * 1.2
       ])
       .range(axisRange);
-  
+
     return linearScale;
 }
 
 // function used for updating xyAxis var upon click on axis label text
 function renderAxis(newScale, Axis, xy) {
     var posAxis = (xy === "x") ? d3.axisBottom(newScale):d3.axisLeft(newScale)
-  
+
     // Redner transition between xy-axis change
     Axis.transition()
       .duration(1000)
       .call(posAxis);
-  
+
     return Axis;
 }
 
@@ -79,7 +80,7 @@ function renderCircles(elemEnter, newScale, chosenAxis, xy) {
         .transition()
         .duration(1000)
         .attr(`d${xy}`, d => newScale(d[chosenAxis]));
-  
+
     return elemEnter;
 }
 
@@ -89,14 +90,14 @@ function updateToolTip(chosenXAxis, chosenYAxis, elemEnter) {
         .attr("class", "d3-tip")
         .offset([-8, 0])
         .html(d => `${d.state} <br>${chosenXAxis}: ${d[chosenXAxis]} <br>${chosenYAxis}: ${d[chosenYAxis]}`);
-    
+
     svg.call(tool_tip);
 
     // Assign hover events
     elemEnter.classed("active inactive", true)
     .on('mouseover', tool_tip.show)
     .on('mouseout', tool_tip.hide);
-   
+
     return elemEnter;
 }
 
@@ -162,7 +163,7 @@ function updateLabelsTooltip(xy, labelEnter) {
         .attr("class", "d3-tip")
         .offset([-10, 0])
         .html(d => `Move ${d} to ${xy}-axis`);
-    
+
     svg.call(tool_tip);
     // add the event handlers
     labelEnter.classed("active inactive", true)
@@ -175,7 +176,7 @@ function updateLabelsTooltip(xy, labelEnter) {
 
 // function updates the rect tag into axis label group
 function updateLabelsRect(xy, xPos, labelsRect) {
-    // Set the size of the square 
+    // Set the size of the square
     var squareSize = 12;
     // Define chosenAxis by xy
     var chosenAxis = (xy === "x") ? chosenXAxis : chosenYAxis;
@@ -231,7 +232,7 @@ function updateLabel() {
         xAxisLabels = xAxisLabels.filter(e => e !== selectedLabel);
         // Add label to yLabels labels
         yAxisLabels.push(selectedLabel);
-    } 
+    }
     else {
         // Remove label from y-axis labels
         yAxisLabels = yAxisLabels.filter(e => e !== selectedLabel);
@@ -301,23 +302,23 @@ function init() {
       .classed("axis", true)
       .attr("id", "yAxis")
       .call(leftAxis);
-      
+
     // Define the data for the circles + text
     var elem = chartGroup.selectAll("g circle")
         .data(acsData);
- 
-    // Create and place the "blocks" containing the circle and the text  
+
+    // Create and place the "blocks" containing the circle and the text
     var elemEnter = elem.enter()
         .append("g")
         .attr("id", "elemEnter");
-    
+
     // Create the circle for each block
     elemEnter.append("circle")
         .attr('cx', d => xLinearScale(d[chosenXAxis]))
         .attr('cy', d => yLinearScale(d[chosenYAxis]))
         .attr('r', r)
         .classed("stateCircle", true);
-    
+
     // Create the text for each circle
     elemEnter.append("text")
         .attr("dx", d => xLinearScale(d[chosenXAxis]))
@@ -325,7 +326,7 @@ function init() {
         .classed("stateText", true)
         .attr("font-size", parseInt(r*0.8))
         .text(d => d.abbr);
-  
+
     // Create group for xLabels: x-axis label
     var xLabels = chartGroup.append("g")
         .attr("transform", `translate(${chartWidth / 2}, ${chartHeight + 20})`)
@@ -396,23 +397,18 @@ function init() {
     var elemEnter = updateToolTip(chosenXAxis, chosenYAxis, elemEnter);
 };
 
-// Load data from data.csv
-d3.csv("./data.csv", function(error, data) {
-    // Throw an error if one occurs
-    if (error) return console.warn(error);
-  
-    // Parse data: Cast the data values to a number
-    data.forEach(d => {
-      d.pollution = +d.pollution;
-      d.poverty = +d.poverty;
-      d.cars = +d.cars;
-      d.traffic = +d.traffic;
-      d.density = +d.density;
-      d.asthma = +d.asthma;
-    });
-
+d3.csv("./data.csv", d => ({
+  ...d,
+  pollution: Number(d.pollution),
+  poverty: Number(d.poverty),
+  cars: Number(d.cars),
+  traffic: Number(d.traffic),
+  density: Number(d.density),
+  asthma: Number(d.asthma),
+}))
+  .then(data => {
     // Load data into acsData
     acsData = data;
     // Initialize scatter chart
-    init();
+  init();
 });
